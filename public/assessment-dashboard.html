@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBE System - Assessment Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .tabs { display: flex; gap: 1rem; border-bottom: 2px solid var(--border-color); margin-bottom: 2rem; }
+        .tab { padding: 0.75rem 1.5rem; cursor: pointer; color: var(--text-secondary); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .table-container { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { color: var(--text-secondary); font-size: 0.875rem; font-weight: 500; text-transform: uppercase; }
+        
+        .co-badge { background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-right: 4px; display: inline-block; }
+        
+        /* Print Styles */
+        @media print {
+            body { background: white; }
+            .sidebar, .print-hide { display: none !important; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; }
+            #tab-print { display: block !important; }
+            .paper-container { box-shadow: none; padding: 0; max-width: 100%; margin: 0; border: none; }
+            .app-container { display: block; }
+        }
+
+        .paper-container { background: white; padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color); }
+        .paper-header { text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+        .university-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .assessment-details { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 500; }
+        .question-item { display: flex; margin-bottom: 1.5rem; font-size: 1.1rem; }
+        .q-number { font-weight: 600; margin-right: 1rem; min-width: 30px; }
+        .q-text { flex-grow: 1; }
+        .q-meta { text-align: right; min-width: 100px; font-weight: 600; display: flex; flex-direction: column; gap: 4px; }
+        
+        .matrix-table th, .matrix-table td { text-align: center; padding: 0.5rem; border: 1px solid var(--border-color); }
+        .matrix-table th { background: var(--bg-secondary); }
+        .matrix-table td.student-col { text-align: left; min-width: 200px; }
+        .mark-input { width: 60px; padding: 4px; text-align: center; border: 1px solid var(--border-color); border-radius: 4px; }
+        .mark-input:invalid { border-color: var(--danger); background: #fee2e2; }
+    </style>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="images/logo.png" alt="Chitkara University" style="max-height: 40px; width: auto;">
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav"></nav>
+        
+            <div style="margin-top: auto; padding: 1rem 0;">
+                <button class="btn btn-secondary" style="width: 100%; justify-content: flex-start; gap: 0.5rem;" onclick="logout()">
+                    <i data-lucide="log-out"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="print-hide" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h1 class="animate-fade-in text-gradient" id="pageTitle">Loading...</h1>
+                    <p style="color: var(--text-secondary)" id="pageSubtitle" class="animate-fade-in">Manage everything for this assessment.</p>
+                </div>
+                <a href="assessments.html" class="btn btn-secondary animate-fade-in">
+                    <i data-lucide="arrow-left"></i> Back
+                </a>
+            </header>
+
+            <div class="tabs print-hide animate-fade-in">
+                <div class="tab active" onclick="switchTab('design', this)"><i data-lucide="edit"></i> Design Paper</div>
+                <div class="tab" onclick="switchTab('print', this)"><i data-lucide="file-text"></i> Preview & Print</div>
+                <div class="tab" onclick="switchTab('marks', this)"><i data-lucide="grid"></i> Fill Marks</div>
+            </div>
+
+            <!-- Tab: Design -->
+            <div id="tab-design" class="tab-content active print-hide animate-fade-in">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
+                        <h3 style="margin:0;">Assessment Questions</h3>
+                        <button class="btn btn-primary" onclick="document.getElementById('addQModal').classList.add('active')">
+                            <i data-lucide="plus"></i> Add Question
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Question</th><th>Max Marks</th><th>Mapped COs</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody id="qTableBody">
+                                <tr><td colspan="4" style="text-align: center; color: var(--text-secondary)">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Print -->
+            <div id="tab-print" class="tab-content animate-fade-in">
+                <div class="print-hide" style="text-align: right; margin-bottom: 1rem;">
+                    <button class="btn btn-primary" onclick="window.print()">
+                        <i data-lucide="printer"></i> Download PDF / Print
+                    </button>
+                </div>
+                <div class="paper-container">
+                    <div class="paper-header">
+                        <div class="university-name">CHITKARA UNIVERSITY</div>
+                        <div class="assessment-details">
+                            <span id="pCourse">Course: Loading...</span>
+                            <span>Date: ____________</span>
+                        </div>
+                        <div class="assessment-details">
+                            <span id="pName">Assessment: Loading...</span>
+                            <span id="pMarks">Max Marks: Loading...</span>
+                        </div>
+                    </div>
+                    <div id="questionsContainer" style="color: var(--text-secondary); text-align: center;">Loading questions...</div>
+                </div>
+            </div>
+
+            <!-- Tab: Marks -->
+            <div id="tab-marks" class="tab-content print-hide animate-fade-in">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin:0;">Marks Entry</h3>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <div class="tabs" style="margin-bottom: 0; border: none; padding-bottom: 0;">
+                                <div class="tab active" style="padding: 0.5rem 1rem;" id="mode-bulk" onclick="switchMarksMode('bulk')">Bulk Matrix</div>
+                                <div class="tab" style="padding: 0.5rem 1rem;" id="mode-individual" onclick="switchMarksMode('individual')">Individual Selection</div>
+                            </div>
+                            <select id="mSection" class="input-field" style="width: auto;" onchange="handleSectionChange()">
+                                <option value="">All Sections</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="document.getElementById('uploadModal').classList.add('active'); fetchUploadHistory();">
+                                <i data-lucide="upload"></i> Import File
+                            </button>
+                            <button class="btn btn-primary" onclick="saveAllMarks()" id="saveBtnBulk">
+                                <i data-lucide="save"></i> Save All Marks
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="bulkContainer" style="overflow-x: auto;">
+                        <table class="matrix-table">
+                            <thead id="matrixHead"></thead>
+                            <tbody id="matrixBody">
+                                <tr><td>Loading matrix...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="individualContainer" style="display: none; max-width: 600px; margin: 0 auto; padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <div class="form-group">
+                            <label class="input-label">Select Student</label>
+                            <select id="mStudentSelect" class="input-field" onchange="loadIndividualForm()">
+                                <option value="">Choose a student...</option>
+                            </select>
+                        </div>
+                        <div id="individualForm" style="margin-top: 1.5rem;">
+                            <div style="text-align: center; color: var(--text-secondary);">Select a student to enter marks.</div>
+                        </div>
+                        <div style="margin-top: 1.5rem; text-align: right;">
+                            <button class="btn btn-primary" onclick="saveIndividualMarks()" id="saveBtnIndiv" style="display: none;">
+                                <i data-lucide="save"></i> Save Student Marks
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Question Modal -->
+    <div class="modal-overlay" id="addQModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Question to Assessment</h2>
+                <button class="modal-close" onclick="document.getElementById('addQModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <form id="addQForm" onsubmit="handleAddQ(event)">
+                <div class="form-group">
+                    <label class="input-label">Question Text</label>
+                    <textarea id="qText" class="input-field" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Max Marks</label>
+                    <input type="number" id="qMarks" class="input-field" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Map to COs (Ctrl+Click for multiple)</label>
+                    <select id="qCOs" class="input-field" multiple style="height: 100px;"></select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;" id="saveQBtn">Save Question</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2 class="modal-title">Upload & Import Marks</h2>
+                <button class="modal-close" onclick="document.getElementById('uploadModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            
+            <div id="uploadStep1">
+                <div class="form-group">
+                    <label class="input-label">Select Excel or CSV File</label>
+                    <input type="file" id="marksFile" accept=".xlsx, .xls, .csv" class="input-field" style="padding-top:0.5rem;">
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;" onclick="handleFileUpload()" id="uploadBtn">
+                    <i data-lucide="upload"></i> Upload & Analyze
+                </button>
+                <hr style="border:0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+                <h4 style="margin-top:0;">Past Uploads (Backups)</h4>
+                <div id="pastUploadsContainer" style="max-height: 200px; overflow-y: auto;">
+                    <div style="color:var(--text-secondary); text-align:center;">Loading...</div>
+                </div>
+            </div>
+
+            <div id="uploadStep2" style="display: none;">
+                <h4 style="color: var(--primary); margin-top:0;">Map Columns</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Select which column from your file matches the fields below.</p>
+                
+                <div class="form-group">
+                    <label class="input-label">Student Roll Number Column</label>
+                    <select id="mapRollNo" class="input-field"></select>
+                </div>
+                
+                <hr style="border:0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+                <h5 style="margin-top:0;">Map Questions:</h5>
+                <div id="mapQuestionsContainer"></div>
+
+                <div class="form-actions" style="margin-top: 1.5rem;">
+                    <button class="btn btn-secondary" onclick="resetUpload()">Back</button>
+                    <button class="btn btn-primary" onclick="importMappedData()" id="importBtn">Import & Calculate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+        const aId = new URLSearchParams(window.location.search).get('id');
+        let currentAssessment = null;
+        let globalQuestions = [];
+        let globalCOs = [];
+        let globalStudents = [];
+        let globalMarks = [];
+
+        // Load correct sidebar dynamically to ensure active state is correct
+        document.getElementById('sidebarNav').innerHTML = `
+            <a href="index.html" class="nav-item"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+            <a href="students.html" class="nav-item"><i data-lucide="users"></i> Students</a>
+            <a href="courses.html" class="nav-item"><i data-lucide="book"></i> Courses</a>
+            <a href="enrollments.html" class="nav-item"><i data-lucide="user-plus"></i> Enrollments</a>
+            <a href="assessments.html" class="nav-item active"><i data-lucide="clipboard-list"></i> Assessments</a>
+            <a href="co-po.html" class="nav-item"><i data-lucide="network"></i> CO/PO Mapping</a>
+        `;
+        lucide.createIcons();
+
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if(el) el.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+            if(tabId === 'marks') {
+                fetchExistingMarks().then(() => {
+                    handleSectionChange();
+                });
+            }
+        }
+        
+        async function fetchExistingMarks() {
+            const res = await apiCall('marks.php');
+            if(res.success) {
+                globalMarks = res.data;
+            }
+        }
+        
+        function getExistingMark(rollNo, questionText) {
+            const mark = globalMarks.find(m => m.roll_no === rollNo && m.question === questionText && m.assessment_name === currentAssessment.name);
+            return mark ? mark.obtainedMarks : '';
+        }
+
+        function handleSectionChange() {
+            if(document.getElementById('bulkContainer').style.display !== 'none') {
+                loadMatrix();
+            } else {
+                populateStudentDropdown();
+                loadIndividualForm();
+            }
+        }
+
+        function switchMarksMode(mode) {
+            document.getElementById('mode-bulk').classList.remove('active');
+            document.getElementById('mode-individual').classList.remove('active');
+            document.getElementById('mode-' + mode).classList.add('active');
+            
+            if(mode === 'bulk') {
+                document.getElementById('bulkContainer').style.display = 'block';
+                document.getElementById('individualContainer').style.display = 'none';
+                document.getElementById('saveBtnBulk').style.display = 'inline-flex';
+                loadMatrix();
+            } else {
+                document.getElementById('bulkContainer').style.display = 'none';
+                document.getElementById('individualContainer').style.display = 'block';
+                document.getElementById('saveBtnBulk').style.display = 'none';
+                populateStudentDropdown();
+                loadIndividualForm();
+            }
+        }
+
+        async function init() {
+            if(!aId) { showToast("Assessment ID missing"); window.location.href="assessments.html"; return; }
+            
+            const [aRes, qRes, coRes, secRes, stRes] = await Promise.all([
+                apiCall('assessments.php'), apiCall('questions.php'), apiCall('co.php'), apiCall('sections.php'), apiCall('students.php')
+            ]);
+
+            if(aRes.success) {
+                currentAssessment = aRes.data.find(a => a.id === aId);
+                if(currentAssessment) {
+                    document.getElementById('pageTitle').textContent = currentAssessment.name;
+                    document.getElementById('pageSubtitle').textContent = `Course: ${currentAssessment.course_code || 'N/A'} | Weightage: ${currentAssessment.weightage}%`;
+                    
+                    document.getElementById('pCourse').textContent = `Course: ${currentAssessment.course_code || ''} - ${currentAssessment.course_name || ''}`;
+                    document.getElementById('pName').textContent = `Assessment: ${currentAssessment.name} (${currentAssessment.type})`;
+                    document.getElementById('pMarks').textContent = `Max Marks: ${currentAssessment.maxMarks}`;
+                }
+            }
+            if(coRes.success && currentAssessment) {
+                globalCOs = coRes.data.filter(c => c.course_code === currentAssessment.course_code);
+                const qCOs = document.getElementById('qCOs');
+                globalCOs.forEach(co => {
+                    const opt = document.createElement('option'); opt.value = co.id; opt.textContent = co.code; qCOs.appendChild(opt);
+                });
+            }
+            if(secRes.success) {
+                const s = document.getElementById('mSection');
+                secRes.data.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; s.appendChild(o); });
+            }
+            if(stRes.success) globalStudents = stRes.data;
+
+            if(qRes.success && currentAssessment) {
+                globalQuestions = qRes.data.filter(q => q.assessment_name === currentAssessment.name);
+                renderQuestions();
+                renderPaper();
+            }
+        }
+
+        function renderQuestions() {
+            const tbody = document.getElementById('qTableBody');
+            if(globalQuestions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">No questions added yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = globalQuestions.map(q => {
+                const cosHtml = q.mapped_cos ? q.mapped_cos.split(', ').map(co => `<span class="co-badge">${co}</span>`).join('') : '<span style="color:gray">None</span>';
+                return `
+                <tr>
+                    <td style="max-width:300px;">${q.question}</td>
+                    <td>${q.maxMarks}</td>
+                    <td>${cosHtml}</td>
+                    <td>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="deleteQuestion('${q.id}')">
+                            <i data-lucide="trash-2" style="width:14px; color: var(--danger)"></i>
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+            lucide.createIcons();
+        }
+
+        function renderPaper() {
+            const container = document.getElementById('questionsContainer');
+            if(globalQuestions.length === 0) {
+                container.innerHTML = 'No questions added yet.';
+                return;
+            }
+            container.style.textAlign = 'left';
+            container.style.color = 'var(--text-primary)';
+            container.innerHTML = globalQuestions.map((q, idx) => `
+                <div class="question-item">
+                    <div class="q-number">Q${idx + 1}.</div>
+                    <div class="q-text">${q.question}</div>
+                    <div class="q-meta">
+                        <div>[${q.maxMarks}]</div>
+                        ${q.mapped_cos ? `<div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: normal;">(${q.mapped_cos})</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function handleAddQ(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveQBtn');
+            btn.innerHTML = 'Saving...'; btn.disabled = true;
+
+            const selectedCOs = Array.from(document.getElementById('qCOs').selectedOptions).map(opt => opt.value);
+            const res = await apiCall('questions.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    assessmentId: aId,
+                    question: document.getElementById('qText').value,
+                    maxMarks: parseInt(document.getElementById('qMarks').value),
+                    coIds: selectedCOs
+                })
+            });
+
+            if(res.success) {
+                document.getElementById('addQModal').classList.remove('active');
+                document.getElementById('addQForm').reset();
+                const qRes = await apiCall('questions.php');
+                if(qRes.success) {
+                    globalQuestions = qRes.data.filter(q => q.assessment_name === currentAssessment.name);
+                    renderQuestions();
+                    renderPaper();
+                }
+            } else {
+                showToast(res.message);
+            }
+            btn.innerHTML = 'Save Question'; btn.disabled = false;
+        }
+
+        async function deleteQuestion(id) {
+            if(confirm('Delete question?')) {
+                await apiCall(`questions.php?id=${id}`, { method: 'DELETE' });
+                const qRes = await apiCall('questions.php');
+                if(qRes.success) {
+                    globalQuestions = qRes.data.filter(q => q.assessment_name === currentAssessment.name);
+                    renderQuestions();
+                    renderPaper();
+                }
+            }
+        }
+
+        function loadMatrix() {
+            const sId = document.getElementById('mSection').value;
+            let filteredStudents = globalStudents;
+            if (sId) {
+                const sectionName = document.getElementById('mSection').options[document.getElementById('mSection').selectedIndex].text;
+                filteredStudents = globalStudents.filter(s => s.section_name === sectionName);
+            }
+
+            if(globalQuestions.length === 0) {
+                document.getElementById('matrixBody').innerHTML = '<tr><td colspan="100%">Please add questions in the Design tab first.</td></tr>';
+                return;
+            }
+            if(filteredStudents.length === 0) {
+                document.getElementById('matrixBody').innerHTML = '<tr><td colspan="100%">No students found.</td></tr>';
+                return;
+            }
+
+            const thead = document.getElementById('matrixHead');
+            let headHtml = `<tr><th class="student-col">Student</th>`;
+            globalQuestions.forEach((q, idx) => {
+                headHtml += `<th title="${q.question}">Q${idx+1}<br><small>[${q.maxMarks}M]</small></th>`;
+            });
+            headHtml += `</tr>`;
+            thead.innerHTML = headHtml;
+
+            const tbody = document.getElementById('matrixBody');
+            let bodyHtml = '';
+            filteredStudents.forEach(st => {
+                bodyHtml += `<tr>
+                    <td class="student-col">
+                        <strong>${st.name}</strong><br>
+                        <span style="font-size:0.75rem; color:var(--text-secondary)">${st.studentId}</span>
+                    </td>`;
+                globalQuestions.forEach(q => {
+                    const existingVal = getExistingMark(st.studentId, q.question);
+                    bodyHtml += `<td><input type="number" class="mark-input" data-student="${st.id}" data-question="${q.id}" data-max="${q.maxMarks}" min="0" max="${q.maxMarks}" placeholder="-" value="${existingVal}"></td>`;
+                });
+                bodyHtml += `</tr>`;
+            });
+            tbody.innerHTML = bodyHtml;
+        }
+
+        function populateStudentDropdown() {
+            const sId = document.getElementById('mSection').value;
+            let filteredStudents = globalStudents;
+            if (sId) {
+                const sectionName = document.getElementById('mSection').options[document.getElementById('mSection').selectedIndex].text;
+                filteredStudents = globalStudents.filter(s => s.section_name === sectionName);
+            }
+            
+            const sel = document.getElementById('mStudentSelect');
+            sel.innerHTML = '<option value="">Choose a student...</option>' + 
+                filteredStudents.map(s => `<option value="${s.id}">${s.name} (${s.studentId})</option>`).join('');
+        }
+        
+        function loadIndividualForm() {
+            const studentId = document.getElementById('mStudentSelect').value;
+            const container = document.getElementById('individualForm');
+            const saveBtn = document.getElementById('saveBtnIndiv');
+            
+            if(!studentId) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-secondary);">Select a student to enter marks.</div>';
+                saveBtn.style.display = 'none';
+                return;
+            }
+            
+            const student = globalStudents.find(s => s.id === studentId);
+            if(globalQuestions.length === 0) {
+                container.innerHTML = '<div style="color: var(--danger);">Please add questions in the Design tab first.</div>';
+                saveBtn.style.display = 'none';
+                return;
+            }
+
+            let html = `<h4 style="margin-bottom: 1rem;">Marks for ${student.name} (${student.studentId})</h4>`;
+            globalQuestions.forEach((q, idx) => {
+                const existingVal = getExistingMark(student.studentId, q.question);
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--border-color); margin-bottom: 0.5rem; border-radius: 4px;">
+                        <div style="flex-grow: 1;">
+                            <strong>Q${idx+1}.</strong> ${q.question}
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Max: ${q.maxMarks} Marks</div>
+                        </div>
+                        <div>
+                            <input type="number" class="mark-input indiv-mark-input" data-student="${student.id}" data-question="${q.id}" data-max="${q.maxMarks}" min="0" max="${q.maxMarks}" placeholder="-" value="${existingVal}" style="width: 80px; padding: 0.5rem;">
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            saveBtn.style.display = 'inline-flex';
+        }
+
+        async function saveIndividualMarks() {
+            const inputs = document.querySelectorAll('.indiv-mark-input');
+            const marksData = [];
+            const sectionId = document.getElementById('mSection').value || null;
+            let hasErrors = false;
+
+            inputs.forEach(input => {
+                if(input.value !== '') {
+                    const val = parseFloat(input.value);
+                    const max = parseFloat(input.getAttribute('data-max'));
+                    if(val < 0 || val > max) {
+                        hasErrors = true; input.style.borderColor = 'red';
+                    } else {
+                        input.style.borderColor = 'var(--border-color)';
+                        marksData.push({
+                            studentId: input.getAttribute('data-student'), questionId: input.getAttribute('data-question'),
+                            obtainedMarks: val, maxMarks: max, sectionId: sectionId
+                        });
+                    }
+                }
+            });
+
+            if (hasErrors) { showToast('Some marks exceed max allowed marks. Correct red highlighted boxes.'); return; }
+            if (marksData.length === 0) { showToast('No marks entered.'); return; }
+
+            const btn = document.getElementById('saveBtnIndiv');
+            btn.innerHTML = 'Saving...'; btn.disabled = true;
+
+            const res = await apiCall('marks.php?action=batch', {
+                method: 'POST', body: JSON.stringify({ marks: marksData })
+            });
+
+            if (res.success) {
+                showToast('Marks saved successfully!');
+                await fetchExistingMarks();
+            } else {
+                showToast('Failed: ' + res.message);
+            }
+            btn.innerHTML = '<i data-lucide="save"></i> Save Student Marks'; 
+            btn.disabled = false;
+            lucide.createIcons();
+        }
+
+        async function saveAllMarks() {
+            const inputs = document.querySelectorAll('.mark-input');
+            const marksData = [];
+            const sectionId = document.getElementById('mSection').value || null;
+            let hasErrors = false;
+
+            inputs.forEach(input => {
+                if(input.value !== '') {
+                    const val = parseFloat(input.value);
+                    const max = parseFloat(input.getAttribute('data-max'));
+                    if(val < 0 || val > max) {
+                        hasErrors = true; input.style.borderColor = 'red';
+                    } else {
+                        input.style.borderColor = 'var(--border-color)';
+                        marksData.push({
+                            studentId: input.getAttribute('data-student'), questionId: input.getAttribute('data-question'),
+                            obtainedMarks: val, maxMarks: max, sectionId: sectionId
+                        });
+                    }
+                }
+            });
+
+            if (hasErrors) { showToast('Some marks exceed max allowed marks. Correct red highlighted boxes.'); return; }
+            if (marksData.length === 0) { showToast('No marks entered.'); return; }
+
+            const btn = document.getElementById('saveBtn');
+            btn.innerHTML = 'Saving...'; btn.disabled = true;
+
+            const res = await apiCall('marks.php?action=batch', {
+                method: 'POST', body: JSON.stringify({ marks: marksData })
+            });
+
+            if (res.success) {
+                showToast('Marks saved successfully!');
+                await fetchExistingMarks();
+            } else {
+                showToast('Failed: ' + res.message);
+            }
+            btn.innerHTML = '<i data-lucide="save"></i> Save All Marks'; 
+            btn.disabled = false;
+            lucide.createIcons();
+        }
+
+        let uploadedWorkbookData = [];
+        
+        async function handleFileUpload() {
+            const fileInput = document.getElementById('marksFile');
+            if (!fileInput.files.length) { showToast('Please select a file'); return; }
+            
+            const file = fileInput.files[0];
+            const btn = document.getElementById('uploadBtn');
+            btn.innerHTML = 'Uploading...'; btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('courseId', globalCourseId);
+            formData.append('assessmentId', assessmentId);
+
+            const uploadRes = await fetch(`api/upload.php`, { method: 'POST', body: formData });
+            const uploadJson = await uploadRes.json();
+            
+            if (!uploadJson.success) {
+                showToast(uploadJson.message, 'error');
+                btn.innerHTML = '<i data-lucide="upload"></i> Upload & Analyze'; btn.disabled = false;
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                
+                const rawData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                if(rawData.length < 2) {
+                    showToast('File seems empty or invalid');
+                    resetUpload();
+                    return;
+                }
+
+                const headers = rawData[0];
+                uploadedWorkbookData = XLSX.utils.sheet_to_json(firstSheet);
+
+                const rollSelect = document.getElementById('mapRollNo');
+                rollSelect.innerHTML = '<option value="">Select Column...</option>';
+                headers.forEach(h => rollSelect.innerHTML += `<option value="${h}">${h}</option>`);
+
+                const qContainer = document.getElementById('mapQuestionsContainer');
+                qContainer.innerHTML = '';
+                globalQuestions.forEach(q => {
+                    let sel = `<div class="form-group" style="margin-bottom:0.5rem;">
+                        <label style="font-size:0.8rem; color:var(--text-secondary)">${q.question} (Max: ${q.maxMarks})</label>
+                        <select class="input-field map-q-select" data-qid="${q.id}">
+                            <option value="">Skip this question...</option>`;
+                    headers.forEach(h => sel += `<option value="${h}">${h}</option>`);
+                    sel += `</select></div>`;
+                    qContainer.innerHTML += sel;
+                });
+
+                document.getElementById('uploadStep1').style.display = 'none';
+                document.getElementById('uploadStep2').style.display = 'block';
+                showToast('File analyzed! Please map columns.', 'success');
+                lucide.createIcons();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function resetUpload() {
+            document.getElementById('uploadStep1').style.display = 'block';
+            document.getElementById('uploadStep2').style.display = 'none';
+            const btn = document.getElementById('uploadBtn');
+            btn.innerHTML = '<i data-lucide="upload"></i> Upload & Analyze'; btn.disabled = false;
+            document.getElementById('marksFile').value = '';
+            uploadedWorkbookData = [];
+            fetchUploadHistory();
+        }
+
+        async function fetchUploadHistory() {
+            const container = document.getElementById('pastUploadsContainer');
+            if(!container) return;
+            const res = await apiCall(`upload.php?courseId=${globalCourseId}`);
+            if(res.success && res.data.length > 0) {
+                container.innerHTML = res.data.map(f => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding: 0.5rem; border: 1px solid var(--border-color); margin-bottom:0.5rem; border-radius:4px;">
+                        <div>
+                            <div style="font-weight:500; font-size:0.9rem;">${f.originalName}</div>
+                            <div style="font-size:0.75rem; color:var(--text-secondary)">${new Date(f.uploadedAt).toLocaleString()} - ${f.assessment_name || 'N/A'}</div>
+                        </div>
+                        <a href="uploads/${f.filename}" download class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Download</a>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<div style="color:var(--text-secondary); text-align:center; padding: 1rem;">No past uploads found.</div>';
+            }
+        }
+
+        async function importMappedData() {
+            const rollCol = document.getElementById('mapRollNo').value;
+            if(!rollCol) { showToast('Please select the Roll Number column'); return; }
+
+            const qSelects = document.querySelectorAll('.map-q-select');
+            const mappings = [];
+            qSelects.forEach(sel => {
+                if(sel.value) {
+                    const qid = sel.getAttribute('data-qid');
+                    const qobj = globalQuestions.find(x => x.id === qid);
+                    mappings.push({ qid, colName: sel.value, maxMarks: parseFloat(qobj.maxMarks) });
+                }
+            });
+
+            if(mappings.length === 0) { showToast('Please map at least one question column'); return; }
+
+            const marksData = [];
+            let errors = 0;
+
+            uploadedWorkbookData.forEach(row => {
+                const rollNo = row[rollCol];
+                if(!rollNo) return;
+                
+                const student = globalStudents.find(s => String(s.studentId).trim() === String(rollNo).trim() || String(s.name).trim() === String(rollNo).trim());
+                if(!student) return;
+
+                mappings.forEach(m => {
+                    const cellVal = row[m.colName];
+                    if(cellVal !== undefined && cellVal !== null && String(cellVal).toUpperCase() !== 'U' && String(cellVal).trim() !== '') {
+                        const mark = parseFloat(cellVal);
+                        if(!isNaN(mark) && mark >= 0 && mark <= m.maxMarks) {
+                            marksData.push({
+                                studentId: student.id,
+                                questionId: m.qid,
+                                obtainedMarks: mark,
+                                maxMarks: m.maxMarks,
+                                sectionId: student.sectionId || null
+                            });
+                        } else {
+                            errors++;
+                        }
+                    }
+                });
+            });
+
+            if(errors > 0) { showToast(`Warning: Skipped ${errors} invalid marks.`); }
+            if(marksData.length === 0) { showToast('No valid marks found to import.'); return; }
+
+            const btn = document.getElementById('importBtn');
+            btn.innerHTML = 'Importing...'; btn.disabled = true;
+
+            const res = await apiCall('marks.php?action=batch', {
+                method: 'POST', body: JSON.stringify({ marks: marksData })
+            });
+
+            if (res.success) {
+                await apiCall('attainments.php', { method: 'POST', body: JSON.stringify({ action: 'calculate', courseId: globalCourseId }) });
+                showToast('Data imported and calculations updated successfully!', 'success');
+                document.getElementById('uploadModal').classList.remove('active');
+                await fetchExistingMarks();
+                resetUpload();
+            } else {
+                showToast('Failed to save marks: ' + res.message, 'error');
+                btn.innerHTML = 'Import & Calculate'; btn.disabled = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

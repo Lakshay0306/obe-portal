@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBE System - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 2.5rem;
+        }
+        .login-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+        }
+    </style>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <div class="login-container">
+        <div class="card login-card animate-fade-in">
+            <div class="login-logo text-gradient" style="margin-bottom: 2rem;">
+                <img src="images/logo.png" alt="Chitkara University" style="max-height: 60px; width: auto;">
+            </div>
+            <h2 style="text-align: center; margin-bottom: 0.5rem;">Welcome Back</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.875rem;">Sign in to access your dashboard</p>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label class="input-label" for="email">Email Address</label>
+                    <input type="text" id="email" class="input-field" placeholder="Enter your email" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label" for="password">Password</label>
+                    <input type="password" id="password" class="input-field" placeholder="Enter your password" required>
+                </div>
+                
+                <div id="errorMessage" style="color: var(--danger); font-size: 0.875rem; margin-bottom: 1rem; display: none; text-align: center;"></div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1rem; padding: 0.75rem;" id="loginBtn">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            btn.innerHTML = 'Signing in...';
+            btn.disabled = true;
+            errorMsg.style.display = 'none';
+
+            const res = await apiCall('auth.php?action=login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+
+            if (res.success) {
+                if(res.token) localStorage.setItem('token', res.token);
+                window.location.href = 'index.html';
+            } else {
+                errorMsg.textContent = res.message || 'Login failed';
+                errorMsg.style.display = 'block';
+                btn.innerHTML = 'Sign In';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBE System - Attainments</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .table-container { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { color: var(--text-secondary); font-size: 0.875rem; font-weight: 500; text-transform: uppercase; }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+        .badge-active { background: #d1fae5; color: #065f46; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+        .badge-type { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        
+        .tabs { display: flex; gap: 1rem; border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .tab { padding: 0.75rem 1.5rem; cursor: pointer; color: var(--text-secondary); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    </style>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="images/logo.png" alt="Chitkara University" style="max-height: 40px; width: auto;">
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="colleges.html" class="nav-item">
+                    <i data-lucide="building-2"></i> Colleges
+                </a>
+                <a href="programs.html" class="nav-item">
+                    <i data-lucide="graduation-cap"></i> Programs
+                </a>
+                <a href="batches.html" class="nav-item">
+                    <i data-lucide="calendar-days"></i> Batches
+                </a>
+                <a href="courses.html" class="nav-item">
+                    <i data-lucide="book"></i> Courses
+                </a>
+                <a href="students.html" class="nav-item">
+                    <i data-lucide="users"></i> Students
+                </a>
+                <a href="enrollments.html" class="nav-item">
+                    <i data-lucide="user-plus"></i> Enrollments
+                </a>
+                <a href="assessments.html" class="nav-item">
+                    <i data-lucide="clipboard-list"></i> Assessments
+                </a>
+                <a href="attainments.html" class="nav-item active">
+                    <i data-lucide="bar-chart-2"></i> Attainments
+                </a>
+                <a href="co-po.html" class="nav-item">
+                    <i data-lucide="network"></i> CO/PO Mapping
+                </a>
+            </nav>
+
+            <div style="margin-top: auto; padding: 1rem 0;">
+                <button class="btn btn-secondary" style="width: 100%; justify-content: flex-start; gap: 0.5rem;" onclick="logout()">
+                    <i data-lucide="log-out"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div>
+                    <h1 class="animate-fade-in text-gradient">Attainments</h1>
+                    <p style="color: var(--text-secondary)" class="animate-fade-in">Official Course and Program Outcome Attainment Reports.</p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary animate-fade-in" onclick="openSettingsModal()">
+                        <i data-lucide="settings"></i> OBE Settings
+                    </button>
+                    <button class="btn btn-secondary animate-fade-in" onclick="document.getElementById('calcModal').classList.add('active')">
+                        <i data-lucide="calculator"></i> Auto Calculate
+                    </button>
+                </div>
+            </header>
+
+            <div class="tabs animate-fade-in" style="animation-delay: 0.1s">
+                <div class="tab active" onclick="switchTab('course-co')" id="tabBtn-course-co">Course CO Scores</div>
+                <div class="tab" onclick="switchTab('course-po')" id="tabBtn-course-po">Course PO Averages</div>
+                <div class="tab" onclick="switchTab('student-data')" id="tabBtn-student-data">Student Drill-down</div>
+            </div>
+
+            <div class="card animate-fade-in" style="animation-delay: 0.1s" id="courseCoContainer">
+                <h3 style="margin-top:0;">Official Class-Level CO Scores (0-3 Rubric)</h3>
+                <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:1rem;">Based on percentage of students meeting the target marks threshold.</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>CO</th>
+                                <th>Students Attempted</th>
+                                <th>Students Met Target</th>
+                                <th>Internal (0-3)</th>
+                                <th>External (0-3)</th>
+                                <th>Final Score</th>
+                                <th>Calculated At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courseCoTableBody">
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-secondary)">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Course PO Container -->
+            <div class="card animate-fade-in" style="animation-delay: 0.1s; display: none;" id="coursePoContainer">
+                <h3 style="margin-top:0;">Official Class-Level PO Execution Averages</h3>
+                <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:1rem;">Calculated as (80% Direct PO) + (20% Indirect PO).</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>PO</th>
+                                <th>Direct (80%)</th>
+                                <th>Indirect (20%)</th>
+                                <th>Final PO Level</th>
+                                <th>Calculated At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coursePoTableBody">
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-secondary)">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Student Drill-down Container -->
+            <div class="card animate-fade-in" style="animation-delay: 0.1s; display: none;" id="studentDataContainer">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <button class="btn btn-secondary" onclick="toggleStudentView('co')" id="toggleStudentCo" style="background:var(--primary); color:white; border-color:var(--primary);">CO Details</button>
+                    <button class="btn btn-secondary" onclick="toggleStudentView('po')" id="toggleStudentPo">PO Details</button>
+                </div>
+                
+                <div class="table-container" id="studentCoTableWrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>CO</th>
+                                <th>Student</th>
+                                <th>Roll No</th>
+                                <th>Percentage</th>
+                                <th>Target Met</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentCoTableBody">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-secondary)">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="table-container" id="studentPoTableWrapper" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>PO</th>
+                                <th>Student</th>
+                                <th>Roll No</th>
+                                <th>Attainment Level (0-3)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentPoTableBody">
+                            <tr><td colspan="5" style="text-align: center; color: var(--text-secondary)">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Auto Calculate Modal -->
+    <div class="modal-overlay" id="calcModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Calculate Attainments</h2>
+                <button class="modal-close" onclick="document.getElementById('calcModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <form id="calcForm" onsubmit="handleCalculate(event)">
+                <div class="form-group">
+                    <label class="input-label">Select Course</label>
+                    <select id="cCourse" class="input-field" required>
+                        <option value="">Select Course...</option>
+                    </select>
+                </div>
+                <p style="font-size:0.875rem; color:var(--text-secondary); margin-bottom: 1.5rem;">
+                    This will recalculate Student-level and Course-level CO & PO attainments based on current marks and CO-PO mappings. Threshold is 60%.
+                </p>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="calcBtn" style="width:100%">Calculate Now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2 class="modal-title">OBE Settings & Indirect POs</h2>
+                <button class="modal-close" onclick="document.getElementById('settingsModal').classList.remove('active')"><i data-lucide="x"></i></button>
+            </div>
+            <div class="form-group">
+                <label class="input-label">Select Course to Configure</label>
+                <select id="sCourse" class="input-field" onchange="loadCourseSettings()">
+                    <option value="">Select Course...</option>
+                </select>
+            </div>
+            <div id="settingsForms" style="display: none;">
+                <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--primary);">1. Dynamic Thresholds</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Configure the percentage boundaries for CO Attainment scores.</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="input-label">Target Mark % (e.g. 60)</label>
+                        <input type="number" id="sTarget" class="input-field" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="input-label">Score 3 Min % (e.g. 80)</label>
+                        <input type="number" id="sScore3" class="input-field" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="input-label">Score 2 Min % (e.g. 70)</label>
+                        <input type="number" id="sScore2" class="input-field" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="input-label">Score 1 Min % (e.g. 60)</label>
+                        <input type="number" id="sScore1" class="input-field" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="input-label">Internal Weightage (%)</label>
+                        <input type="number" id="sInternalWeight" class="input-field" min="0" max="100" value="40">
+                    </div>
+                    <div class="form-group">
+                        <label class="input-label">External Weightage (%)</label>
+                        <input type="number" id="sExternalWeight" class="input-field" min="0" max="100" value="60">
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--primary);">2. Indirect PO Scores (Surveys)</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Enter survey results (0-3 scale). Final PO will be 80% Direct + 20% Indirect.</p>
+                <div id="indirectPoList" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                    <!-- Dynamically populated -->
+                </div>
+
+                <div class="form-actions" style="margin-top: 2rem;">
+                    <button class="btn btn-primary" id="saveSettingsBtn" style="width:100%" onclick="saveCourseSettings()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+
+        async function openSettingsModal() {
+            document.getElementById('settingsModal').classList.add('active');
+            const s = document.getElementById('sCourse');
+            s.innerHTML = '<option value="">Select Course...</option>';
+            const res = await apiCall('courses.php');
+            if(res.success) {
+                res.data.forEach(c => {
+                    const o = document.createElement('option'); o.value = c.id; o.textContent = `${c.code} - ${c.name}`; s.appendChild(o);
+                });
+            }
+            document.getElementById('settingsForms').style.display = 'none';
+        }
+
+        async function loadCourseSettings() {
+            const courseId = document.getElementById('sCourse').value;
+            if(!courseId) {
+                document.getElementById('settingsForms').style.display = 'none';
+                return;
+            }
+            const res = await apiCall(`settings.php?courseId=${courseId}`);
+            if(res.success) {
+                document.getElementById('settingsForms').style.display = 'block';
+                const set = res.data.settings;
+                document.getElementById('sTarget').value = set.targetThreshold || 60;
+                document.getElementById('sScore3').value = set.score3Threshold || 80;
+                document.getElementById('sScore2').value = set.score2Threshold || 70;
+                document.getElementById('sScore1').value = set.score1Threshold || 60;
+                document.getElementById('sInternalWeight').value = set.internalWeight || 40;
+                document.getElementById('sExternalWeight').value = set.externalWeight || 60;
+
+                const poList = document.getElementById('indirectPoList');
+                poList.innerHTML = '';
+                if(res.data.indirectPos.length === 0) {
+                    poList.innerHTML = '<div style="grid-column: 1 / -1; color: var(--text-secondary);">No POs mapped to this course yet. Please map COs to POs first or calculate attainments once.</div>';
+                } else {
+                    res.data.indirectPos.forEach(p => {
+                        poList.innerHTML += `
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="input-label">${p.code}</label>
+                                <input type="number" class="input-field indirect-po-input" data-po="${p.poId}" value="${p.indirectLevel}" step="0.1" min="0" max="3">
+                            </div>
+                        `;
+                    });
+                }
+            }
+        }
+
+        async function saveCourseSettings() {
+            const courseId = document.getElementById('sCourse').value;
+            if(!courseId) return;
+            
+            const btn = document.getElementById('saveSettingsBtn');
+            btn.innerHTML = 'Saving...'; btn.disabled = true;
+
+            const settings = {
+                targetThreshold: parseFloat(document.getElementById('sTarget').value),
+                score3Threshold: parseFloat(document.getElementById('sScore3').value),
+                score2Threshold: parseFloat(document.getElementById('sScore2').value),
+                score1Threshold: parseFloat(document.getElementById('sScore1').value),
+                internalWeight: parseFloat(document.getElementById('sInternalWeight').value),
+                externalWeight: parseFloat(document.getElementById('sExternalWeight').value)
+            };
+
+            const indirectPos = {};
+            document.querySelectorAll('.indirect-po-input').forEach(input => {
+                indirectPos[input.getAttribute('data-po')] = parseFloat(input.value) || 0;
+            });
+
+            const res = await apiCall('settings.php', {
+                method: 'POST',
+                body: JSON.stringify({ courseId, settings, indirectPos })
+            });
+
+            if(res.success) {
+                showToast(res.message, 'success');
+                document.getElementById('settingsModal').classList.remove('active');
+            } else {
+                showToast(res.message, 'error');
+            }
+            btn.innerHTML = 'Save Settings'; btn.disabled = false;
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tabBtn-course-co').classList.remove('active');
+            document.getElementById('tabBtn-course-po').classList.remove('active');
+            document.getElementById('tabBtn-student-data').classList.remove('active');
+            document.getElementById('tabBtn-' + tab).classList.add('active');
+            
+            document.getElementById('courseCoContainer').style.display = tab === 'course-co' ? 'block' : 'none';
+            document.getElementById('coursePoContainer').style.display = tab === 'course-po' ? 'block' : 'none';
+            document.getElementById('studentDataContainer').style.display = tab === 'student-data' ? 'block' : 'none';
+        }
+        
+        function toggleStudentView(view) {
+            const btnCo = document.getElementById('toggleStudentCo');
+            const btnPo = document.getElementById('toggleStudentPo');
+            if(view === 'co') {
+                btnCo.style.background = 'var(--primary)'; btnCo.style.color = 'white'; btnCo.style.borderColor = 'var(--primary)';
+                btnPo.style.background = 'white'; btnPo.style.color = 'var(--text-primary)'; btnPo.style.borderColor = 'var(--border-color)';
+                document.getElementById('studentCoTableWrapper').style.display = 'block';
+                document.getElementById('studentPoTableWrapper').style.display = 'none';
+            } else {
+                btnPo.style.background = 'var(--primary)'; btnPo.style.color = 'white'; btnPo.style.borderColor = 'var(--primary)';
+                btnCo.style.background = 'white'; btnCo.style.color = 'var(--text-primary)'; btnCo.style.borderColor = 'var(--border-color)';
+                document.getElementById('studentPoTableWrapper').style.display = 'block';
+                document.getElementById('studentCoTableWrapper').style.display = 'none';
+            }
+        }
+
+        async function populateDropdowns() {
+            const res = await apiCall('courses.php');
+            if(res.success) {
+                const s = document.getElementById('cCourse');
+                res.data.forEach(c => {
+                    const o = document.createElement('option'); o.value = c.id; o.textContent = `${c.code} - ${c.name}`; s.appendChild(o);
+                });
+            }
+        }
+
+        async function fetchAttainments() {
+            const res = await apiCall('attainments.php');
+            
+            if (res.success && res.data) {
+                // Render Course CO
+                const ccoBody = document.getElementById('courseCoTableBody');
+                if (!res.data.course_co || res.data.course_co.length === 0) {
+                    ccoBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary)">No class-level attainments calculated yet.</td></tr>`;
+                } else {
+                    ccoBody.innerHTML = res.data.course_co.map(a => {
+                        let badgeClass = 'badge-inactive';
+                        if (a.attainmentScore === 3) badgeClass = 'badge-active';
+                        else if (a.attainmentScore === 2) badgeClass = 'badge-type';
+                        else if (a.attainmentScore === 1) badgeClass = 'badge-type';
+                        
+                        return `<tr>
+                            <td><strong>${a.course_code}</strong></td>
+                            <td><span class="badge badge-type">${a.co_code}</span></td>
+                            <td>${a.studentsAttempted}</td>
+                            <td>${a.studentsMetTarget}</td>
+                            <td>${parseFloat(a.internalScore || 0).toFixed(1)}</td>
+                            <td>${parseFloat(a.externalScore || 0).toFixed(1)}</td>
+                            <td><strong style="color:var(--primary); font-size:1.1rem;">${parseFloat(a.attainmentScore || 0).toFixed(2)}</strong></td>
+                            <td>${new Date(a.calculatedAt).toLocaleString()}</td>
+                        </tr>`;
+                    }).join('');
+                }
+                
+                // Render Course PO
+                const cpoBody = document.getElementById('coursePoTableBody');
+                if (!res.data.course_po || res.data.course_po.length === 0) {
+                    cpoBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary)">No class-level PO attainments calculated yet.</td></tr>`;
+                } else {
+                    cpoBody.innerHTML = res.data.course_po.map(a => `
+                        <tr>
+                            <td><strong>${a.course_code}</strong></td>
+                            <td><span class="badge badge-type">${a.po_code}</span></td>
+                            <td>${a.directLevel.toFixed(2)}</td>
+                            <td>${a.indirectLevel.toFixed(2)}</td>
+                            <td><strong style="font-size:1.1rem; color:var(--primary);">${a.attainmentLevel.toFixed(2)}</strong></td>
+                            <td>${new Date(a.calculatedAt).toLocaleString()}</td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Render Student CO
+                const scoBody = document.getElementById('studentCoTableBody');
+                if (!res.data.co || res.data.co.length === 0) {
+                    scoBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary)">No student attainments calculated yet.</td></tr>`;
+                } else {
+                    scoBody.innerHTML = res.data.co.map(a => `
+                        <tr>
+                            <td><strong>${a.course_code}</strong></td>
+                            <td><span class="badge badge-type">${a.co_code}</span></td>
+                            <td>${a.student_name}</td>
+                            <td>${a.roll_no}</td>
+                            <td>${a.percentage}%</td>
+                            <td><span class="badge ${a.metTarget ? 'badge-active' : 'badge-inactive'}">${a.metTarget ? 'Yes' : 'No'}</span></td>
+                        </tr>
+                    `).join('');
+                }
+                
+                // Render Student PO
+                const spoBody = document.getElementById('studentPoTableBody');
+                if (!res.data.po || res.data.po.length === 0) {
+                    spoBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-secondary)">No student PO attainments calculated yet.</td></tr>`;
+                } else {
+                    spoBody.innerHTML = res.data.po.map(a => `
+                        <tr>
+                            <td><strong>${a.course_code}</strong></td>
+                            <td><span class="badge badge-type">${a.po_code}</span></td>
+                            <td>${a.student_name}</td>
+                            <td>${a.roll_no}</td>
+                            <td><strong>${a.attainmentLevel.toFixed(2)}</strong></td>
+                        </tr>
+                    `).join('');
+                }
+                lucide.createIcons();
+            } else {
+                showToast("Failed to load data: " + res.message, "error");
+            }
+        }
+
+        async function handleCalculate(e) {
+            e.preventDefault();
+            const btn = document.getElementById('calcBtn');
+            btn.innerHTML = 'Calculating...'; btn.disabled = true;
+
+            const res = await apiCall('attainments.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'calculate',
+                    courseId: document.getElementById('cCourse').value
+                })
+            });
+
+            if (res.success) {
+                showToast(res.message, 'success');
+                document.getElementById('calcModal').classList.remove('active');
+                fetchAttainments();
+            } else {
+                showToast(res.message, 'error');
+            }
+            btn.innerHTML = 'Calculate Now'; btn.disabled = false;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAttainments();
+            populateDropdowns();
+        });
+    </script>
+</body>
+</html>

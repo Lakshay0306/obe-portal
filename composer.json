@@ -1,0 +1,7 @@
+{
+    "name": "test-obe/php-vanilla-app",
+    "description": "Vanilla PHP and JS conversion of the OBE Next.js project",
+    "require": {
+        "mongodb/mongodb": "^1.17"
+    }
+}

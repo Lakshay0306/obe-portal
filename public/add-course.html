@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBE System - Add New Course</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .table-container { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { color: var(--text-secondary); font-size: 0.875rem; font-weight: 500; text-transform: uppercase; }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+        .badge-active { background: #d1fae5; color: #065f46; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+        .badge-status { background: #e0e7ff; color: #3730a3; }
+    </style>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="images/logo.png" alt="Chitkara University" style="max-height: 40px; width: auto;">
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="colleges.html" class="nav-item">
+                    <i data-lucide="building-2"></i> Colleges
+                </a>
+                <a href="programs.html" class="nav-item">
+                    <i data-lucide="graduation-cap"></i> Programs
+                </a>
+                <a href="batches.html" class="nav-item">
+                    <i data-lucide="calendar-days"></i> Batches
+                </a>
+                <a href="courses.html" class="nav-item">
+                    <i data-lucide="book"></i> Courses
+                </a>
+                <a href="students.html" class="nav-item">
+                    <i data-lucide="users"></i> Students
+                </a>
+                <a href="enrollments.html" class="nav-item">
+                    <i data-lucide="user-plus"></i> Enrollments
+                </a>
+                <a href="assessments.html" class="nav-item">
+                    <i data-lucide="clipboard-list"></i> Assessments
+                </a>
+                <a href="attainments.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i> Attainments
+                </a>
+                <a href="co-po.html" class="nav-item">
+                    <i data-lucide="network"></i> CO/PO Mapping
+                </a>
+            </nav>
+
+            
+            <div style="margin-top: auto; padding: 1rem 0;">
+                <button class="btn btn-secondary" style="width: 100%; justify-content: flex-start; gap: 0.5rem;" onclick="logout()">
+                    <i data-lucide="log-out"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div>
+                    <h1 class="animate-fade-in text-gradient">Add New Course</h1>
+                    <p style="color: var(--text-secondary)" class="animate-fade-in">Fill out the form below to add a new record.</p>
+                </div>
+                <a href="courses.html" class="btn btn-secondary animate-fade-in">
+                    <i data-lucide="arrow-left"></i> Back
+                </a>
+            </header>
+
+            <div class="card animate-fade-in" style="animation-delay: 0.1s; ">
+                <form id="addCourseForm" onsubmit="handleAddCourse(event)">
+
+                <div class="form-group">
+                    <label class="input-label">Course Name</label>
+                    <input type="text" id="crName" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Course Code</label>
+                    <input type="text" id="crCode" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Batch</label>
+                    <select id="crBatch" class="input-field" required>
+                        <option value="">Select Batch...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Description (Optional)</label>
+                    <textarea id="crDesc" class="input-field" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Status</label>
+                    <select id="crStatus" class="input-field" required>
+                        <option value="FUTURE">Future</option>
+                        <option value="ACTIVE" selected>Active</option>
+                        <option value="COMPLETED">Completed</option>
+                    </select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="input-label">Target Percentage (%)</label>
+                        <input type="number" id="crTarget" class="input-field" required min="1" max="100" value="50">
+                    </div>
+                    <div class="form-group">
+                        <label class="input-label">Level 1 Threshold (%)</label>
+                        <input type="number" id="crL1" class="input-field" required min="1" max="100" value="50">
+                    </div>
+                    <div class="form-group">
+                        <label class="input-label">Level 2 Threshold (%)</label>
+                        <input type="number" id="crL2" class="input-field" required min="1" max="100" value="70">
+                    </div>
+                    <div class="form-group">
+                        <label class="input-label">Level 3 Threshold (%)</label>
+                        <input type="number" id="crL3" class="input-field" required min="1" max="100" value="80">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Save</button>
+                </div>
+            
+</form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Course Modal -->
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+
+        async function fetchCourses() {
+            const res = await apiCall('courses.php');
+            const tbody = document.getElementById('courseTableBody');
+            if (!tbody) return;
+            
+            if (res.success && res.data) {
+                if (res.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary)">No courses found in database.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = res.data.map(c => `
+                    <tr>
+                        <td><strong>${c.name}</strong></td>
+                        <td>${c.code}</td>
+                        <td>${c.program_name || 'N/A'}</td>
+                        <td>${c.batch_name || 'N/A'}</td>
+                        <td><span class="badge badge-status">${c.status}</span></td>
+                        <td>${c.targetPercentage}%</td>
+                        <td><span class="badge ${c.isActive ? 'badge-active' : 'badge-inactive'}">${c.isActive ? 'Active' : 'Inactive'}</span></td>
+                        <td>
+                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="deleteCourse('${c.id}')">
+                                <i data-lucide="trash-2" style="width:14px; color: var(--danger)"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+            } else {
+                tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger)">Failed to load courses: ${res.message || 'Unknown error'}</td></tr>`;
+            }
+        }
+
+        async function populateBatches() {
+            const res = await apiCall('batches.php');
+            if (res.success && res.data) {
+                const select = document.getElementById('crBatch');
+                res.data.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.name;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        async function handleAddCourse(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            btn.innerHTML = 'Saving...'; btn.disabled = true;
+
+            const res = await apiCall('courses.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: document.getElementById('crName').value,
+                    code: document.getElementById('crCode').value,
+                    batchId: document.getElementById('crBatch').value,
+                    description: document.getElementById('crDesc').value || null,
+                    status: document.getElementById('crStatus').value,
+                    targetPercentage: parseFloat(document.getElementById('crTarget').value),
+                    level1Threshold: parseFloat(document.getElementById('crL1').value),
+                    level2Threshold: parseFloat(document.getElementById('crL2').value),
+                    level3Threshold: parseFloat(document.getElementById('crL3').value)
+                })
+            });
+
+            if (res.success) {
+                window.location.href = 'courses.html';
+            } else {
+                showToast(res.message);
+            }
+            btn.innerHTML = 'Save'; btn.disabled = false;
+        }
+
+        async function deleteCourse(id) {
+            if(confirm('Are you sure you want to delete this course?')) {
+                await apiCall(`courses.php?id=${id}`, { method: 'DELETE' });
+                
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCourses();
+            populateBatches();
+        });
+    </script>
+</body>
+</html>

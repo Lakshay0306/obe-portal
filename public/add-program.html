@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBE System - Add New Program</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .table-container { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { color: var(--text-secondary); font-size: 0.875rem; font-weight: 500; text-transform: uppercase; }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+        .badge-active { background: #d1fae5; color: #065f46; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+    </style>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="images/logo.png" alt="Chitkara University" style="max-height: 40px; width: auto;">
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="colleges.html" class="nav-item">
+                    <i data-lucide="building-2"></i> Colleges
+                </a>
+                <a href="programs.html" class="nav-item">
+                    <i data-lucide="graduation-cap"></i> Programs
+                </a>
+                <a href="batches.html" class="nav-item">
+                    <i data-lucide="calendar-days"></i> Batches
+                </a>
+                <a href="courses.html" class="nav-item">
+                    <i data-lucide="book"></i> Courses
+                </a>
+                <a href="students.html" class="nav-item">
+                    <i data-lucide="users"></i> Students
+                </a>
+                <a href="enrollments.html" class="nav-item">
+                    <i data-lucide="user-plus"></i> Enrollments
+                </a>
+                <a href="assessments.html" class="nav-item">
+                    <i data-lucide="clipboard-list"></i> Assessments
+                </a>
+                <a href="attainments.html" class="nav-item">
+                    <i data-lucide="bar-chart-2"></i> Attainments
+                </a>
+                <a href="co-po.html" class="nav-item">
+                    <i data-lucide="network"></i> CO/PO Mapping
+                </a>
+            </nav>
+
+            
+            <div style="margin-top: auto; padding: 1rem 0;">
+                <button class="btn btn-secondary" style="width: 100%; justify-content: flex-start; gap: 0.5rem;" onclick="logout()">
+                    <i data-lucide="log-out"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div>
+                    <h1 class="animate-fade-in text-gradient">Add New Program</h1>
+                    <p style="color: var(--text-secondary)" class="animate-fade-in">Fill out the form below to add a new record.</p>
+                </div>
+                <a href="programs.html" class="btn btn-secondary animate-fade-in">
+                    <i data-lucide="arrow-left"></i> Back
+                </a>
+            </header>
+
+            <div class="card animate-fade-in" style="animation-delay: 0.1s; ">
+                <form id="addProgramForm" onsubmit="handleAddProgram(event)">
+
+                <div class="form-group">
+                    <label class="input-label">Program Name</label>
+                    <input type="text" id="pName" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Program Code</label>
+                    <input type="text" id="pCode" class="input-field" required>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Duration (Years)</label>
+                    <input type="number" id="pDuration" class="input-field" min="1" max="10" required>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">College</label>
+                    <select id="pCollege" class="input-field" required>
+                        <option value="">Select College...</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Save</button>
+                </div>
+            
+</form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Program Modal -->
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+
+        async function fetchPrograms() {
+            const res = await apiCall('programs.php');
+            const tbody = document.getElementById('programTableBody');
+            if (!tbody) return;
+            
+            if (res.success && res.data) {
+                if (res.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary)">No programs found in database.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = res.data.map(p => `
+                    <tr>
+                        <td><strong>${p.name}</strong></td>
+                        <td>${p.code}</td>
+                        <td>${p.duration} Years</td>
+                        <td>${p.college_name || 'N/A'}</td>
+                        <td><span class="badge ${p.isActive ? 'badge-active' : 'badge-inactive'}">${p.isActive ? 'Active' : 'Inactive'}</span></td>
+                        <td>
+                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="deleteProgram('${p.id}')">
+                                <i data-lucide="trash-2" style="width:14px; color: var(--danger)"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+            } else {
+                tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger)">Failed to load programs: ${res.message || 'Unknown error'}</td></tr>`;
+            }
+        }
+
+        async function populateColleges() {
+            const res = await apiCall('colleges.php');
+            if (res.success && res.data) {
+                const select = document.getElementById('pCollege');
+                res.data.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c._id || c.id;
+                    opt.textContent = c.name;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        async function handleAddProgram(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            btn.innerHTML = 'Saving...'; btn.disabled = true;
+
+            const res = await apiCall('programs.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: document.getElementById('pName').value,
+                    code: document.getElementById('pCode').value,
+                    duration: parseInt(document.getElementById('pDuration').value),
+                    collegeId: document.getElementById('pCollege').value
+                })
+            });
+
+            if (res.success) {
+                window.location.href = 'programs.html';
+            } else {
+                showToast(res.message);
+            }
+            btn.innerHTML = 'Save'; btn.disabled = false;
+        }
+
+        async function deleteProgram(id) {
+            if(confirm('Are you sure you want to delete this program?')) {
+                await apiCall(`programs.php?id=${id}`, { method: 'DELETE' });
+                
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPrograms();
+            populateColleges();
+        });
+    </script>
+</body>
+</html>
