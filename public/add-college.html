@@ -194,7 +194,6 @@
         async function deleteCollege(id) {
             if(confirm('Are you sure you want to delete this college?')) {
                 await apiCall(`colleges.php?id=${id}`, { method: 'DELETE' });
-                
             }
         }
 
