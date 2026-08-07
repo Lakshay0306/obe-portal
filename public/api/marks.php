@@ -61,7 +61,7 @@ if ($method === 'POST') {
                     'questionId' => $mark['questionId'],
                     'studentId' => $mark['studentId'],
                     'sectionId' => empty($mark['sectionId']) ? null : $mark['sectionId'],
-                    'obtainedMarks' => $mark['obtainedMarks'],
+                    'obtainedMarks' => ($mark['obtainedMarks'] === 'U') ? null : $mark['obtainedMarks'],
                     'maxMarks' => $mark['maxMarks'],
                     'academicYear' => empty($mark['academicYear']) ? null : $mark['academicYear']
                 ]);
@@ -86,7 +86,7 @@ if ($method === 'POST') {
             'questionId' => $data['questionId'],
             'studentId' => $data['studentId'],
             'sectionId' => empty($data['sectionId']) ? null : $data['sectionId'],
-            'obtainedMarks' => $data['obtainedMarks'],
+            'obtainedMarks' => ($data['obtainedMarks'] === 'U') ? null : $data['obtainedMarks'],
             'maxMarks' => $data['maxMarks'],
             'academicYear' => empty($data['academicYear']) ? null : $data['academicYear']
         ]);

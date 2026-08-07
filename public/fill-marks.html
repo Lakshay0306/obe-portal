@@ -211,7 +211,7 @@
                     
                     currentQuestions.forEach(q => {
                         bodyHtml += `<td>
-                            <input type="number" class="mark-input" data-student="${st.id}" data-question="${q.id}" data-max="${q.maxMarks}" min="0" max="${q.maxMarks}" placeholder="-">
+                            <input type="text" class="mark-input" data-student="${st.id}" data-question="${q.id}" data-max="${q.maxMarks}" placeholder="-" title="Enter marks or 'U' for Unattempted">
                         </td>`;
                     });
                     
@@ -233,20 +233,32 @@
 
             inputs.forEach(input => {
                 if(input.value !== '') {
-                    const val = parseFloat(input.value);
-                    const max = parseFloat(input.getAttribute('data-max'));
-                    if(val < 0 || val > max) {
-                        hasErrors = true;
-                        input.style.borderColor = 'red';
-                    } else {
+                    const valStr = input.value.trim().toUpperCase();
+                    if (valStr === 'U') {
                         input.style.borderColor = 'var(--border-color)';
                         marksData.push({
                             studentId: input.getAttribute('data-student'),
                             questionId: input.getAttribute('data-question'),
-                            obtainedMarks: val,
-                            maxMarks: max,
+                            obtainedMarks: 'U',
+                            maxMarks: parseFloat(input.getAttribute('data-max')),
                             sectionId: sectionId
                         });
+                    } else {
+                        const val = parseFloat(valStr);
+                        const max = parseFloat(input.getAttribute('data-max'));
+                        if(isNaN(val) || val < 0 || val > max) {
+                            hasErrors = true;
+                            input.style.borderColor = 'red';
+                        } else {
+                            input.style.borderColor = 'var(--border-color)';
+                            marksData.push({
+                                studentId: input.getAttribute('data-student'),
+                                questionId: input.getAttribute('data-question'),
+                                obtainedMarks: val,
+                                maxMarks: max,
+                                sectionId: sectionId
+                            });
+                        }
                     }
                 }
             });

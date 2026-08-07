@@ -179,14 +179,14 @@ if ($method === 'POST') {
                 qcm."coId",
                 sm."studentId",
                 sm."sectionId",
-                (SUM(sm."obtainedMarks") * 100.0 / NULLIF(SUM(sm."maxMarks"), 0)) as percentage,
-                (SUM(sm."obtainedMarks") * 100.0 / NULLIF(SUM(sm."maxMarks"), 0)) >= :targetThreshold as metTarget,
+                (SUM(sm."obtainedMarks") * 100.0 / NULLIF(SUM(CASE WHEN sm."obtainedMarks" IS NOT NULL THEN sm."maxMarks" ELSE 0 END), 0)) as percentage,
+                (SUM(sm."obtainedMarks") * 100.0 / NULLIF(SUM(CASE WHEN sm."obtainedMarks" IS NOT NULL THEN sm."maxMarks" ELSE 0 END), 0)) >= :targetThreshold as metTarget,
                 
-                (SUM(CASE WHEN a.type = \'Internal\' THEN sm."obtainedMarks" ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN a.type = \'Internal\' THEN sm."maxMarks" ELSE 0 END), 0)) as internalPercentage,
-                (SUM(CASE WHEN a.type = \'Internal\' THEN sm."obtainedMarks" ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN a.type = \'Internal\' THEN sm."maxMarks" ELSE 0 END), 0)) >= :targetThreshold as internalMetTarget,
+                (SUM(CASE WHEN a.type = \'Internal\' THEN sm."obtainedMarks" ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN a.type = \'Internal\' AND sm."obtainedMarks" IS NOT NULL THEN sm."maxMarks" ELSE 0 END), 0)) as internalPercentage,
+                (SUM(CASE WHEN a.type = \'Internal\' THEN sm."obtainedMarks" ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN a.type = \'Internal\' AND sm."obtainedMarks" IS NOT NULL THEN sm."maxMarks" ELSE 0 END), 0)) >= :targetThreshold as internalMetTarget,
                 
-                (SUM(CASE WHEN a.type = \'External\' THEN sm."obtainedMarks" ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN a.type = \'External\' THEN sm."maxMarks" ELSE 0 END), 0)) as externalPercentage,
-                (SUM(CASE WHEN a.type = \'External\' THEN sm."obtainedMarks" ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN a.type = \'External\' THEN sm."maxMarks" ELSE 0 END), 0)) >= :targetThreshold as externalMetTarget,
+                (SUM(CASE WHEN a.type = \'External\' THEN sm."obtainedMarks" ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN a.type = \'External\' AND sm."obtainedMarks" IS NOT NULL THEN sm."maxMarks" ELSE 0 END), 0)) as externalPercentage,
+                (SUM(CASE WHEN a.type = \'External\' THEN sm."obtainedMarks" ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN a.type = \'External\' AND sm."obtainedMarks" IS NOT NULL THEN sm."maxMarks" ELSE 0 END), 0)) >= :targetThreshold as externalMetTarget,
                 
                 :academicYear,
                 NOW()
