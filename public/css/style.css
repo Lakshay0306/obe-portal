@@ -1,3 +1,5 @@
+@import url('toast.css');
+
 :root {
   /* Chitkara University Light Theme */
   --bg-primary: #f8fafc;
@@ -393,4 +395,3 @@ tr:hover td {
   margin-top: 2rem;
 }
 
-@import url('toast.css');
