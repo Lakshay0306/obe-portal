@@ -1,10 +1,10 @@
 <?php
 // PostgreSQL Database connection using PDO
-$host = 'aws-1-ap-northeast-1.pooler.supabase.com';
-$port = '5432';
+$host = 'aws-0-ap-northeast-1.pooler.supabase.com';
+$port = '6543';
 $dbname = 'postgres';
-$user = 'postgres.hqqenhwigocfrtkmkgem';
-$password = 'Gambhirs@123'; // Decoded from %40
+$user = 'postgres.tnyavdfcuxrkcqvvmugr';
+$password = 'Singla@210306'; // Decoded from %40
 
 try {
     $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
