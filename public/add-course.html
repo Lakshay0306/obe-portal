@@ -177,16 +177,39 @@
             }
         }
 
+        let allPrograms = [];
+        let allBatches = [];
         async function populateBatches() {
-            const res = await apiCall('batches.php');
-            if (res.success && res.data) {
-                const select = document.getElementById('crBatch');
-                res.data.forEach(b => {
-                    const opt = document.createElement('option');
-                    opt.value = b.id;
-                    opt.textContent = b.name;
-                    select.appendChild(opt);
-                });
+            const [cRes, pRes, bRes] = await Promise.all([apiCall("colleges.php"), apiCall("programs.php"), apiCall("batches.php")]);
+            if (pRes.success) allPrograms = pRes.data;
+            if (bRes.success) allBatches = bRes.data;
+            if (cRes.success) {
+                const s = document.getElementById("crCollege");
+                cRes.data.forEach(x => { const o = document.createElement("option"); o.value = x.id || x._id; o.textContent = x.name; s.appendChild(o); });
+            }
+        }
+        
+        document.getElementById("crCollege").addEventListener("change", function() {
+            const cid = this.value;
+            const pSelect = document.getElementById("crProgram");
+            const bSelect = document.getElementById("crBatch");
+            pSelect.innerHTML = '<option value="">Select Program...</option>';
+            bSelect.innerHTML = '<option value="">Select Batch...</option>';
+            if(cid) {
+                const filtered = allPrograms.filter(p => p.collegeId === cid);
+                filtered.forEach(x => { const o = document.createElement("option"); o.value = x.id; o.textContent = x.name; pSelect.appendChild(o); });
+            }
+        });
+        
+        document.getElementById("crProgram").addEventListener("change", function() {
+            const pid = this.value;
+            const bSelect = document.getElementById("crBatch");
+            bSelect.innerHTML = '<option value="">Select Batch...</option>';
+            if(pid) {
+                const filtered = allBatches.filter(b => b.programId === pid);
+                filtered.forEach(x => { const o = document.createElement("option"); o.value = x.id; o.textContent = x.name; bSelect.appendChild(o); });
+            }
+        }););
             }
         }
 

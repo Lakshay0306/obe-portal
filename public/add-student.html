@@ -130,6 +130,9 @@
     <script>
         lucide.createIcons();
 
+        let allPrograms = [];
+        let allBatches = [];
+
         async function fetchStudents() {
             const res = await apiCall('students.php');
             const tbody = document.getElementById('studentTableBody');
@@ -166,22 +169,40 @@
                 apiCall('colleges.php'), apiCall('programs.php'), apiCall('batches.php')
             ]);
             
+            if (pRes.success) allPrograms = pRes.data;
+            if (bRes.success) allBatches = bRes.data;
+            
             if (cRes.success) {
                 const s = document.getElementById('sCollege');
                 cRes.data.forEach(x => { const o = document.createElement('option'); o.value = x.id || x._id; o.textContent = x.name; s.appendChild(o); });
             }
-            if (pRes.success) {
-                const s = document.getElementById('sProgram');
-                pRes.data.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; s.appendChild(o); });
-            }
-            if (bRes.success) {
-                const s = document.getElementById('sBatch');
-                bRes.data.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; s.appendChild(o); });
-            }
         }
 
-        function openModal(id) { document.getElementById(id).classList.add('active'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        document.getElementById('sCollege').addEventListener('change', function() {
+            const cid = this.value;
+            const pSelect = document.getElementById('sProgram');
+            const bSelect = document.getElementById('sBatch');
+            
+            pSelect.innerHTML = '<option value="">Select Program...</option>';
+            bSelect.innerHTML = '<option value="">Select Batch...</option>';
+            
+            if(cid) {
+                const filtered = allPrograms.filter(p => p.collegeId === cid);
+                filtered.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; pSelect.appendChild(o); });
+            }
+        });
+
+        document.getElementById('sProgram').addEventListener('change', function() {
+            const pid = this.value;
+            const bSelect = document.getElementById('sBatch');
+            
+            bSelect.innerHTML = '<option value="">Select Batch...</option>';
+            
+            if(pid) {
+                const filtered = allBatches.filter(b => b.programId === pid);
+                filtered.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; bSelect.appendChild(o); });
+            }
+        });
 
         async function handleAddStudent(e) {
             e.preventDefault();

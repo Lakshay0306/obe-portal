@@ -150,11 +150,25 @@
             }
         }
 
+        let allPrograms = [];
         async function populateDropdowns() {
-            const pRes = await apiCall('programs.php');
-            if (pRes.success) {
-                const s = document.getElementById('bProgram');
-                pRes.data.forEach(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.name; s.appendChild(o); });
+            const [cRes, pRes] = await Promise.all([apiCall("colleges.php"), apiCall("programs.php")]);
+            if (pRes.success) allPrograms = pRes.data;
+            if (cRes.success) {
+                const s = document.getElementById("bCollege");
+                cRes.data.forEach(x => { const o = document.createElement("option"); o.value = x.id || x._id; o.textContent = x.name; s.appendChild(o); });
+            }
+        }
+        
+        document.getElementById("bCollege").addEventListener("change", function() {
+            const cid = this.value;
+            const pSelect = document.getElementById("bProgram");
+            pSelect.innerHTML = '<option value="">Select Program...</option>';
+            if(cid) {
+                const filtered = allPrograms.filter(p => p.collegeId === cid);
+                filtered.forEach(x => { const o = document.createElement("option"); o.value = x.id; o.textContent = x.name; pSelect.appendChild(o); });
+            }
+        }););
             }
         }
 
