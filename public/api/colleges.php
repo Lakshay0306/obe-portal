@@ -7,7 +7,12 @@ $db = (new Database())->getDb();
 
 if ($method === 'GET') {
     try {
-        $stmt = $db->query('SELECT id AS _id, name, code, "isActive" FROM colleges');
+        try {
+            $db->exec('ALTER TABLE colleges ADD COLUMN IF NOT EXISTS vision TEXT');
+            $db->exec('ALTER TABLE colleges ADD COLUMN IF NOT EXISTS mission TEXT');
+        } catch(PDOException $e) {}
+
+        $stmt = $db->query('SELECT id AS _id, name, code, vision, mission, "isActive" FROM colleges');
         $colleges = $stmt->fetchAll();
         
         // Convert boolean if needed
@@ -25,12 +30,19 @@ if ($method === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);
     
     try {
-        $stmt = $db->prepare('INSERT INTO colleges (id, name, code, "isActive", "createdAt", "updatedAt") VALUES (:id, :name, :code, true, NOW(), NOW())');
+        try {
+            $db->exec('ALTER TABLE colleges ADD COLUMN IF NOT EXISTS vision TEXT');
+            $db->exec('ALTER TABLE colleges ADD COLUMN IF NOT EXISTS mission TEXT');
+        } catch(PDOException $e) {}
+
+        $stmt = $db->prepare('INSERT INTO colleges (id, name, code, vision, mission, "isActive", "createdAt", "updatedAt") VALUES (:id, :name, :code, :vision, :mission, true, NOW(), NOW())');
         $id = uniqid('col_');
         $stmt->execute([
             'id' => $id,
             'name' => $data['name'],
-            'code' => $data['code']
+            'code' => $data['code'],
+            'vision' => $data['vision'] ?? null,
+            'mission' => $data['mission'] ?? null
         ]);
         echo json_encode(['success' => true, 'message' => 'College created', 'id' => $id]);
     } catch (PDOException $e) {

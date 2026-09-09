@@ -104,7 +104,10 @@
                     <i data-lucide="clipboard-list"></i> Assessments
                 </a>
                 <a href="attainments.html" class="nav-item">
-                    <i data-lucide="bar-chart-2"></i> Attainments
+                    <i data-lucide="bar-chart-2"></i> Course Attainments
+                </a>
+                <a href="program-attainments.html" class="nav-item">
+                    <i data-lucide="bar-chart"></i> Program Attainments
                 </a>
                 <a href="co-po.html" class="nav-item">
                     <i data-lucide="network"></i> CO/PO Mapping
@@ -127,6 +130,9 @@
                     <p style="color: var(--text-secondary)" class="animate-fade-in">Preview and print the assessment.</p>
                 </div>
                 <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary animate-fade-in" onclick="document.getElementById('uploadModal').classList.add('active')">
+                        <i data-lucide="upload"></i> Bulk Upload
+                    </button>
                     <button class="btn btn-primary animate-fade-in" onclick="window.print()">
                         <i data-lucide="printer"></i> Print PDF
                     </button>
@@ -156,9 +162,71 @@
         </main>
     </div>
 
+    <!-- Upload Modal -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-content" style="max-width: 500px; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-size: 1.25rem;">Bulk Upload Questions</h2>
+                <button onclick="document.getElementById('uploadModal').classList.remove('active')" style="background: none; border: none; cursor: pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <form id="uploadForm" onsubmit="handleUpload(event)">
+                <div class="form-group">
+                    <label class="input-label">Select Excel/CSV File</label>
+                    <input type="file" id="uFile" class="input-field" accept=".csv, .xls, .xlsx" required>
+                </div>
+                <div class="form-actions" style="margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary" id="uploadBtn" style="width: 100%;">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="js/app.js"></script>
     <script>
         lucide.createIcons();
+
+        let currentAssessmentId = null;
+        let currentCourseId = null;
+
+        async function handleUpload(e) {
+            e.preventDefault();
+            if (!currentAssessmentId || !currentCourseId) {
+                showToast('Missing assessment details', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('uploadBtn');
+            btn.innerHTML = 'Uploading...'; btn.disabled = true;
+
+            const fileInput = document.getElementById('uFile');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('assessmentId', currentAssessmentId);
+            formData.append('courseId', currentCourseId);
+
+            try {
+                const token = localStorage.getItem('token');
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const res = await fetch('api/upload.php', {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                }).then(r => r.json());
+
+                if (res.success) {
+                    showToast('File uploaded successfully. Questions are being processed.', 'success');
+                    document.getElementById('uploadModal').classList.remove('active');
+                    loadPaper(); // Reload questions
+                } else {
+                    showToast(res.message || 'Upload failed', 'error');
+                }
+            } catch (err) {
+                showToast('Network error during upload', 'error');
+            }
+            btn.innerHTML = 'Upload'; btn.disabled = false;
+        }
 
         async function loadPaper() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -179,6 +247,9 @@
                     document.getElementById('questionsContainer').innerHTML = '<div style="color:red;text-align:center;">Assessment not found.</div>';
                     return;
                 }
+
+                currentAssessmentId = assessment.id;
+                currentCourseId = assessment.courseId;
 
                 document.getElementById('pCourse').textContent = `Course: ${assessment.course_code || ''} - ${assessment.course_name || ''}`;
                 document.getElementById('pName').textContent = `Assessment: ${assessment.name} (${assessment.type})`;

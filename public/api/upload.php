@@ -73,6 +73,9 @@ if ($method === 'POST') {
 
     if (move_uploaded_file($file['tmp_name'], $destination)) {
         try {
+            $db->beginTransaction();
+            
+            // 1. Save File record
             $stmt = $db->prepare('
                 INSERT INTO uploaded_files (id, "courseId", "assessmentId", "filename", "originalName", "uploadedAt")
                 VALUES (:id, :courseId, :assessmentId, :filename, :originalName, NOW())
@@ -85,17 +88,83 @@ if ($method === 'POST') {
                 'filename' => $filename,
                 'originalName' => $file['name']
             ]);
+
+            // 2. Parse CSV and Insert Questions if it's a CSV
+            $questionsAdded = 0;
+            if (strtolower($ext) === 'csv') {
+                // Get course COs mapping (code => id)
+                $stmtCo = $db->prepare('SELECT id, code FROM cos WHERE "courseId" = :courseId');
+                $stmtCo->execute(['courseId' => $courseId]);
+                $courseCos = [];
+                foreach ($stmtCo->fetchAll(PDO::FETCH_ASSOC) as $co) {
+                    $courseCos[strtoupper(trim($co['code']))] = $co['id'];
+                }
+
+                $handle = fopen($destination, "r");
+                if ($handle !== FALSE) {
+                    $headerRow = true;
+                    $insertQ = $db->prepare('INSERT INTO questions (id, "assessmentId", question, "maxMarks", "isActive", "createdAt", "updatedAt") VALUES (:id, :assessmentId, :question, :maxMarks, true, NOW(), NOW())');
+                    $insertMap = $db->prepare('INSERT INTO question_co_mappings (id, "questionId", "coId", "isActive", "createdAt") VALUES (:id, :questionId, :coId, true, NOW())');
+                    
+                    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                        // Skip header row if it contains 'question' or similar
+                        if ($headerRow) {
+                            $headerRow = false;
+                            if (stripos($data[0], 'question') !== false || stripos($data[0], 'text') !== false) {
+                                continue;
+                            }
+                        }
+                        
+                        if (count($data) >= 2) {
+                            $qText = trim($data[0]);
+                            $qMarks = (float)trim($data[1]);
+                            $coString = isset($data[2]) ? trim($data[2]) : '';
+
+                            if (!empty($qText) && $qMarks > 0) {
+                                $qId = uniqid('que_');
+                                $insertQ->execute([
+                                    'id' => $qId,
+                                    'assessmentId' => $assessmentId,
+                                    'question' => $qText,
+                                    'maxMarks' => $qMarks
+                                ]);
+                                $questionsAdded++;
+
+                                // Parse COs (e.g. "CO1, CO2")
+                                if (!empty($coString)) {
+                                    $coCodes = explode(',', $coString);
+                                    foreach ($coCodes as $code) {
+                                        $c = strtoupper(trim($code));
+                                        if (isset($courseCos[$c])) {
+                                            $insertMap->execute([
+                                                'id' => uniqid('qco_'),
+                                                'questionId' => $qId,
+                                                'coId' => $courseCos[$c]
+                                            ]);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    fclose($handle);
+                }
+            }
+
+            $db->commit();
             
             echo json_encode([
                 'success' => true,
-                'message' => 'File uploaded and stored successfully',
+                'message' => $questionsAdded > 0 ? "Successfully uploaded and parsed $questionsAdded questions." : 'File uploaded and stored successfully. (CSV required for auto-parsing questions)',
                 'data' => [
                     'id' => $fileId,
-                    'path' => 'uploads/' . $filename
+                    'path' => 'uploads/' . $filename,
+                    'parsed' => $questionsAdded
                 ]
             ]);
-        } catch (PDOException $e) {
-            echo json_encode(['success' => false, 'message' => 'Database error while saving file info']);
+        } catch (Exception $e) {
+            $db->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Database error while parsing and saving file info: ' . $e->getMessage()]);
         }
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to move uploaded file']);
