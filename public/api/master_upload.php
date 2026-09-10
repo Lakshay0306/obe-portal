@@ -48,7 +48,7 @@ if ($method === 'POST') {
                 } else {
                     $collegeId = uniqid('col_');
                     $code = strtoupper(substr($cName, 0, 3));
-                    $ins = $db->prepare('INSERT INTO colleges (id, name, code, "isActive", "createdAt") VALUES (?, ?, ?, true, NOW())');
+                    $ins = $db->prepare('INSERT INTO colleges (id, name, code, "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, true, NOW(), NOW())');
                     $ins->execute([$collegeId, $cName, $code]);
                     $stats['colleges']++;
                 }
@@ -71,7 +71,7 @@ if ($method === 'POST') {
                 } else {
                     $programId = uniqid('prog_');
                     $code = strtoupper(substr($pName, 0, 3));
-                    $ins = $db->prepare('INSERT INTO programs (id, "collegeId", name, code, duration, level, threshold, "isActive", "createdAt") VALUES (?, ?, ?, ?, 4, ?, 60, true, NOW())');
+                    $ins = $db->prepare('INSERT INTO programs (id, "collegeId", name, code, duration, level, threshold, "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, 4, ?, 60, true, NOW(), NOW())');
                     $ins->execute([$programId, $collegeId, $pName, $code, $pLevel]);
                     $stats['programs']++;
                 }
@@ -99,7 +99,7 @@ if ($method === 'POST') {
                         $startYear = (int)$matches[1];
                         $endYear = $startYear + 4;
                     }
-                    $ins = $db->prepare('INSERT INTO batches (id, "programId", name, "startYear", "endYear", "isActive", "createdAt") VALUES (?, ?, ?, ?, ?, true, NOW())');
+                    $ins = $db->prepare('INSERT INTO batches (id, "programId", name, "startYear", "endYear", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, true, NOW(), NOW())');
                     $ins->execute([$batchId, $programId, $bName, $startYear, $endYear]);
                     $stats['batches']++;
                 }
@@ -121,7 +121,7 @@ if ($method === 'POST') {
                     $courseId = $row['id'];
                 } else {
                     $courseId = uniqid('crs_');
-                    $ins = $db->prepare('INSERT INTO courses (id, "batchId", name, code, status, "targetPercentage", "level1Threshold", "level2Threshold", "level3Threshold", "isActive", "createdAt") VALUES (?, ?, ?, ?, \'ACTIVE\', 50, 50, 70, 80, true, NOW())');
+                    $ins = $db->prepare('INSERT INTO courses (id, "batchId", name, code, status, "targetPercentage", "level1Threshold", "level2Threshold", "level3Threshold", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, \'ACTIVE\', 50, 50, 70, 80, true, NOW(), NOW())');
                     $ins->execute([$courseId, $batchId, $crName, $crCode]);
                     $stats['courses']++;
                 }
@@ -143,7 +143,7 @@ if ($method === 'POST') {
                     $studentId = $row['id'];
                 } else {
                     $studentId = uniqid('stu_');
-                    $ins = $db->prepare('INSERT INTO students (id, "studentId", name, "collegeId", "programId", "batchId", "isActive", "createdAt") VALUES (?, ?, ?, ?, ?, ?, true, NOW())');
+                    $ins = $db->prepare('INSERT INTO students (id, "studentId", name, "collegeId", "programId", "batchId", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, true, NOW(), NOW())');
                     $ins->execute([$studentId, $stuRoll, $stuName, $collegeId, $programId, $batchId]);
                     $stats['students']++;
                 }
@@ -154,7 +154,7 @@ if ($method === 'POST') {
             $stmt = $db->prepare('SELECT id FROM enrollments WHERE "studentId" = :sid AND "courseId" = :cid');
             $stmt->execute(['sid' => $studentId, 'cid' => $courseId]);
             if (!$stmt->fetch()) {
-                $ins = $db->prepare('INSERT INTO enrollments (id, "studentId", "courseId", "enrolledAt") VALUES (?, ?, ?, NOW())');
+                $ins = $db->prepare('INSERT INTO enrollments (id, "studentId", "courseId", "enrolledAt", "createdAt", "updatedAt", "isActive") VALUES (?, ?, ?, NOW(), NOW(), NOW(), true)');
                 $ins->execute([uniqid('enr_'), $studentId, $courseId]);
                 $stats['enrollments']++;
             }
