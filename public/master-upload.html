@@ -139,9 +139,9 @@
                 <form id="masterUploadForm" onsubmit="handleMasterUpload(event)">
                     <div class="upload-zone">
                         <i data-lucide="file-spreadsheet" style="width: 48px; height: 48px; color: var(--text-secondary); margin-bottom: 1rem;"></i>
-                        <h3 style="margin: 0 0 0.5rem 0;">Select your Master CSV File</h3>
-                        <p style="color: var(--text-secondary); margin: 0 0 1.5rem 0; font-size: 0.875rem;">Only .csv files are supported. If using Excel, choose "Save As -> CSV".</p>
-                        <input type="file" id="csvFile" accept=".csv" required style="max-width: 300px; margin: 0 auto; display: block;" class="input-field">
+                        <h3 style="margin: 0 0 0.5rem 0;">Select your Master Excel/CSV File</h3>
+                        <p style="color: var(--text-secondary); margin: 0 0 1.5rem 0; font-size: 0.875rem;">Supported formats: .xlsx, .xls, .csv</p>
+                        <input type="file" id="csvFile" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required style="max-width: 300px; margin: 0 auto; display: block;" class="input-field">
                     </div>
 
                     <div class="form-actions" style="justify-content: center;">
@@ -164,6 +164,7 @@
         </main>
     </div>
 
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="js/app.js"></script>
     <script>
         lucide.createIcons();
@@ -179,44 +180,62 @@
             btn.disabled = true;
             lucide.createIcons();
 
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            const file = fileInput.files[0];
+            const reader = new FileReader();
 
-            try {
-                const headers = {};
-                const token = localStorage.getItem('token');
-                if (token) headers['Authorization'] = `Bearer ${token}`;
-
-                const res = await fetch('api/master_upload.php', {
-                    method: 'POST',
-                    headers: headers,
-                    body: formData
-                }).then(r => r.json());
-
-                if (res.success) {
-                    showToast('Data processed successfully!', 'success');
-                    document.getElementById('resultsBox').style.display = 'block';
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
                     
-                    const stats = res.stats;
-                    document.getElementById('statsList').innerHTML = `
-                        <li><strong>${stats.colleges}</strong> new Colleges created</li>
-                        <li><strong>${stats.programs}</strong> new Programs created</li>
-                        <li><strong>${stats.batches}</strong> new Batches created</li>
-                        <li><strong>${stats.courses}</strong> new Courses created</li>
-                        <li><strong>${stats.students}</strong> new Students created</li>
-                        <li><strong>${stats.enrollments}</strong> new Enrollments processed</li>
-                    `;
-                } else {
-                    showToast(res.message || 'Upload failed', 'error');
-                }
-            } catch (err) {
-                showToast('Network error during upload', 'error');
-            }
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convert to array of arrays, skipping empty rows
+                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, blankrows: false});
+                    
+                    // Filter out rows that are entirely empty or null
+                    const cleanRows = json.filter(row => row.length > 0 && row.some(cell => cell !== null && cell !== undefined && cell !== ''));
 
-            btn.innerHTML = '<i data-lucide="upload"></i> Upload and Process Data'; 
-            btn.disabled = false;
-            lucide.createIcons();
-            fileInput.value = ''; // Reset
+                    // Send JSON to backend
+                    const headers = { 'Content-Type': 'application/json' };
+                    const token = localStorage.getItem('token');
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                    const res = await fetch('api/master_upload.php', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ data: cleanRows })
+                    }).then(r => r.json());
+
+                    if (res.success) {
+                        showToast('Data processed successfully!', 'success');
+                        document.getElementById('resultsBox').style.display = 'block';
+                        
+                        const stats = res.stats;
+                        document.getElementById('statsList').innerHTML = `
+                            <li><strong>${stats.colleges}</strong> new Colleges created</li>
+                            <li><strong>${stats.programs}</strong> new Programs created</li>
+                            <li><strong>${stats.batches}</strong> new Batches created</li>
+                            <li><strong>${stats.courses}</strong> new Courses created</li>
+                            <li><strong>${stats.students}</strong> new Students created</li>
+                            <li><strong>${stats.enrollments}</strong> new Enrollments processed</li>
+                        `;
+                    } else {
+                        showToast(res.message || 'Upload failed', 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('Failed to parse file or communicate with server.', 'error');
+                } finally {
+                    btn.innerHTML = '<i data-lucide="upload"></i> Upload and Process Data'; 
+                    btn.disabled = false;
+                    lucide.createIcons();
+                    fileInput.value = ''; // Reset
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
         }
     </script>
 </body>
