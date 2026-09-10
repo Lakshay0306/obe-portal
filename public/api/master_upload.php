@@ -47,7 +47,7 @@ if ($method === 'POST') {
                     $collegeId = $row['id'];
                 } else {
                     $collegeId = uniqid('col_');
-                    $code = strtoupper(substr($cName, 0, 3));
+                    $code = strtoupper(substr($cName, 0, 3)) . '_' . rand(1000, 9999);
                     $ins = $db->prepare('INSERT INTO colleges (id, name, code, "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, true, NOW(), NOW())');
                     $ins->execute([$collegeId, $cName, $code]);
                     $stats['colleges']++;
@@ -70,7 +70,7 @@ if ($method === 'POST') {
                     $programId = $row['id'];
                 } else {
                     $programId = uniqid('prog_');
-                    $code = strtoupper(substr($pName, 0, 3));
+                    $code = strtoupper(substr($pName, 0, 3)) . '_' . rand(1000, 9999);
                     $ins = $db->prepare('INSERT INTO programs (id, "collegeId", name, code, duration, level, threshold, "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, 4, ?, 60, true, NOW(), NOW())');
                     $ins->execute([$programId, $collegeId, $pName, $code, $pLevel]);
                     $stats['programs']++;
