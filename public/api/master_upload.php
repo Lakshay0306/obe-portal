@@ -154,7 +154,7 @@ if ($method === 'POST') {
             $stmt = $db->prepare('SELECT id FROM enrollments WHERE "studentId" = :sid AND "courseId" = :cid');
             $stmt->execute(['sid' => $studentId, 'cid' => $courseId]);
             if (!$stmt->fetch()) {
-                $ins = $db->prepare('INSERT INTO enrollments (id, "studentId", "courseId", "enrolledAt", "createdAt", "updatedAt", "isActive") VALUES (?, ?, ?, NOW(), NOW(), NOW(), true)');
+                $ins = $db->prepare('INSERT INTO enrollments (id, "studentId", "courseId", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, true, NOW(), NOW())');
                 $ins->execute([uniqid('enr_'), $studentId, $courseId]);
                 $stats['enrollments']++;
             }
