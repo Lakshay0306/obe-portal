@@ -27,6 +27,9 @@ async function apiCall(endpoint, options = {}) {
         }
         
         const data = await response.json();
+        if (!data.success && data.error) {
+            data.message = data.message + ': ' + data.error;
+        }
         return data;
     } catch (error) {
         console.error('API Error:', error);
